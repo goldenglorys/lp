@@ -1,0 +1,27 @@
+{
+  "name": "lannister-pay",
+  "version": "1.0.0",
+  "description": "Payment processing service",
+  "main": "index.js",
+  "type":"module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goldenglorys/lannister-pay.git"
+  },
+  "keywords": [
+    "payment"
+  ],
+  "author": "Glory",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/goldenglorys/lannister-pay/issues"
+  },
+  "homepage": "https://github.com/goldenglorys/lannister-pay#readme",
+  "dependencies": {
+    "express": "^4.17.3"
+  }
+}
