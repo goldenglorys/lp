@@ -23,5 +23,8 @@
   "homepage": "https://github.com/goldenglorys/lannister-pay#readme",
   "dependencies": {
     "express": "^4.17.3"
+  },
+  "engines": {
+    "node": "17.7.2"
   }
 }
