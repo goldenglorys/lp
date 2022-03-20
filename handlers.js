@@ -1,7 +1,13 @@
-import { writeFileSync } from 'fs';
+import { request, response } from "express";
+import { writeFileSync, readFileSync } from "fs";
+import {
+  ParseFeeConfigurationSpec,
+  GetApplicableFCS,
+  AllocateTransactionFee,
+  GetPrioritizedFCS,
+} from "./helpers.js";
 
-import { ParseFeeConfigurationSpec } from './helpers.js'
-const getPing = async (request, response) => {
+const GetPing = async (request, response) => {
   await response.json({
     success: true,
     result: "pong!",
@@ -17,12 +23,11 @@ const SetupFeesSpec = async (request, response) => {
       });
     }
     const FeeConfigurationSpec = request.body.FeeConfigurationSpec.split("\n");
-    let FCS = await ParseFeeConfigurationSpec(FeeConfigurationSpec);
-    let FCSData = JSON.stringify(FCS);
+    const FCS = await ParseFeeConfigurationSpec(FeeConfigurationSpec);
+    const FCSData = JSON.stringify(FCS);
     writeFileSync("data/FeeConfigurationSpec.json", FCSData);
     return response.status(200).json({ status: "ok" });
   } catch (error) {
-    console.log(error);
     return response.status(500).json({
       success: false,
       message: "Internal server error",
@@ -31,4 +36,63 @@ const SetupFeesSpec = async (request, response) => {
   }
 };
 
-export { getPing, SetupFeesSpec };
+const ComputeTransactionFee = async (request, response) => {
+  try {
+    let StoredFCSData = readFileSync("data/FeeConfigurationSpec.json");
+    let ParsedFCSData = await JSON.parse(StoredFCSData);
+    const { ID, Amount, Currency, CurrencyCountry, Customer, PaymentEntity } =
+      request.body;
+
+    const PayloadFCSData = {
+      FeeCurrency: Currency ? Currency : "*",
+      FeeLocale: !CurrencyCountry
+        ? "*"
+        : CurrencyCountry === PaymentEntity.Country
+        ? "LOCL"
+        : "INTL",
+      FeeEntity: PaymentEntity.Type ? PaymentEntity.Type : "*",
+      FeeEntityProperty: PaymentEntity.Brand ? PaymentEntity.Brand : "*",
+    };
+
+    const ApplicableFCS = await GetApplicableFCS(ParsedFCSData, PayloadFCSData);
+
+    if (!ApplicableFCS.length) {
+      return response.status(404).json({
+        success: true,
+        message:
+          "No Available Fee Configuration Is Applicable To This Transaction",
+      });
+    } else if (ApplicableFCS.length === 1) {
+      const AttributedFee = await AllocateTransactionFee(
+        ApplicableFCS[0],
+        Amount
+      );
+      return response.status(200).json({
+        AppliedFeeID: ApplicableFCS[0].FeeId,
+        AppliedFeeValue: Math.round(AttributedFee),
+        ChargeAmount: Customer.BearsFee ? Amount + AttributedFee : Amount,
+        SettlementAmount: Customer.BearsFee ? Amount : Amount - AttributedFee,
+      });
+    } else if (ApplicableFCS.length > 1) {
+      const FCS = await GetPrioritizedFCS(ApplicableFCS);
+      const AttributedFee = await AllocateTransactionFee(
+        ApplicableFCS[FCS.index],
+        Amount
+      );
+      return response.status(200).json({
+        AppliedFeeID: ApplicableFCS[FCS.index].FeeId,
+        AppliedFeeValue: Math.round(AttributedFee),
+        ChargeAmount: Customer.BearsFee ? Amount + AttributedFee : Amount,
+        SettlementAmount: Customer.BearsFee ? Amount : Amount - AttributedFee,
+      });
+    }
+  } catch (error) {
+    return response.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error,
+    });
+  }
+};
+
+export { GetPing, SetupFeesSpec, ComputeTransactionFee };
