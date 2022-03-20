@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Payment processing service",
   "main": "index.js",
-  "type":"module",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/goldenglorys/lannister-pay#readme",
   "dependencies": {
+    "dotenv": "^16.0.0",
     "express": "^4.17.3"
   },
   "engines": {
