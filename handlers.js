@@ -58,9 +58,7 @@ const ComputeTransactionFee = async (request, response) => {
 
     if (!ApplicableFCS.length) {
       return response.status(404).json({
-        success: true,
-        message:
-          "No Available Fee Configuration Is Applicable To This Transaction",
+        Error: `No fee configuration for ${Currency} transactions.`,
       });
     } else if (ApplicableFCS.length === 1) {
       const AttributedFee = await AllocateTransactionFee(
