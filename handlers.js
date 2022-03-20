@@ -1,5 +1,6 @@
 import { writeFileSync } from 'fs';
 
+import { ParseFeeConfigurationSpec } from './helpers.js'
 const getPing = async (request, response) => {
   await response.json({
     success: true,
@@ -16,18 +17,7 @@ const SetupFeesSpec = async (request, response) => {
       });
     }
     const FeeConfigurationSpec = request.body.FeeConfigurationSpec.split("\n");
-    const FCS = FeeConfigurationSpec.map((FCS) => {
-      let SpecObj = {
-        FeeId: FCS.split(" ")[0],
-        FeeCurrency: FCS.split(" ")[1],
-        FeeLocale: FCS.split(" ")[2],
-        FeeEntity: FCS.split(" ")[3].split("(")[0],
-        FeeEntityProperty: FCS.split(" ")[3].split("(")[1].replace(")", ""),
-        FeeType: FCS.split(" ")[6],
-        value: FCS.split(" ")[7],
-      };
-      return SpecObj
-    });
+    let FCS = await ParseFeeConfigurationSpec(FeeConfigurationSpec);
     let FCSData = JSON.stringify(FCS);
     writeFileSync("data/FeeConfigurationSpec.json", FCSData);
     return response.status(200).json({ status: "ok" });
