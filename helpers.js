@@ -1,3 +1,22 @@
+import NodeCache from "node-cache";
+
+const TTL = 60 * 60 * 1;
+const Cache = new NodeCache({
+  stdTTL: TTL,
+  checkperiod: TTL * 0.2,
+  useClones: false,
+});
+
+const GetCache = (key) => {
+  if (Cache.has(key)) {
+    return Cache.get(key);
+  }
+};
+
+const SetCache = (key, data) => {
+  Cache.set(key, data);
+};
+
 const ParseFeeConfigurationSpec = async (Specs) => {
   const FCS = await Specs.map((FCS) => {
     let SpecObj = {
@@ -67,4 +86,6 @@ export {
   GetApplicableFCS,
   AllocateTransactionFee,
   GetPrioritizedFCS,
+  GetCache,
+  SetCache,
 };

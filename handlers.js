@@ -5,6 +5,8 @@ import {
   GetApplicableFCS,
   AllocateTransactionFee,
   GetPrioritizedFCS,
+  GetCache,
+  SetCache,
 } from "./helpers.js";
 
 const GetPing = async (request, response) => {
@@ -54,17 +56,25 @@ const ComputeTransactionFee = async (request, response) => {
       FeeEntityProperty: PaymentEntity.Brand ? PaymentEntity.Brand : "*",
     };
 
-    const ApplicableFCS = await GetApplicableFCS(ParsedFCSData, PayloadFCSData);
+    const ComputeTxnFCSId_ = `ComputeTxnFCSId_${ID}_${Customer.ID}_${PaymentEntity.ID}_${PaymentEntity.SixID}`;
+    let ApplicableFCS = GetCache(ComputeTxnFCSId_);
+
+    if (!ApplicableFCS) {
+      ApplicableFCS = await GetApplicableFCS(ParsedFCSData, PayloadFCSData);
+      SetCache(ComputeTxnFCSId_, ApplicableFCS);
+    }
 
     if (!ApplicableFCS.length) {
       return response.status(404).json({
         Error: `No fee configuration for ${Currency} transactions.`,
       });
     } else if (ApplicableFCS.length === 1) {
-      const AttributedFee = await AllocateTransactionFee(
-        ApplicableFCS[0],
-        Amount
-      );
+      const ComputeTxnFeeId_ = `ComputeTxnFeeId_${ID}_${Customer.ID}_${PaymentEntity.ID}_${PaymentEntity.SixID}`;
+      let AttributedFee = GetCache(ComputeTxnFeeId_);
+      if (!AttributedFee) {
+        AttributedFee = await AllocateTransactionFee(ApplicableFCS[0], Amount);
+        SetCache(ComputeTxnFeeId_, AttributedFee);
+      }
       return response.status(200).json({
         AppliedFeeID: ApplicableFCS[0].FeeId,
         AppliedFeeValue: Math.round(AttributedFee),
@@ -73,10 +83,15 @@ const ComputeTransactionFee = async (request, response) => {
       });
     } else if (ApplicableFCS.length > 1) {
       const FCS = await GetPrioritizedFCS(ApplicableFCS);
-      const AttributedFee = await AllocateTransactionFee(
-        ApplicableFCS[FCS.index],
-        Amount
-      );
+      const ComputeTxnFeeId_ = `ComputeTxnFeeId_${ID}_${Customer.ID}_${PaymentEntity.ID}_${PaymentEntity.SixID}`;
+      let AttributedFee = GetCache(ComputeTxnFeeId_);
+      if (!AttributedFee) {
+        AttributedFee = await AllocateTransactionFee(
+          ApplicableFCS[FCS.index],
+          Amount
+        );
+        SetCache(ComputeTxnFeeId_, AttributedFee);
+      }
       return response.status(200).json({
         AppliedFeeID: ApplicableFCS[FCS.index].FeeId,
         AppliedFeeValue: Math.round(AttributedFee),
