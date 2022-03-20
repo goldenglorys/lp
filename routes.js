@@ -9,4 +9,6 @@ router.get('/', (_, response) => {
 
 router.get('/ping', handlers.getPing);
 
+router.post('/fees', handlers.SetupFeesSpec);
+
 export default router;
